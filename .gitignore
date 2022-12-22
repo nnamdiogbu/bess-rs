@@ -3,3 +3,8 @@
 .pyc
 /pybess/__pycache__
 /bessctl/__pycache__
+
+.vscode/*
+
+*.cc
+*.h

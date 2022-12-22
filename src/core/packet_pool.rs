@@ -32,7 +32,9 @@
 // }
 
 // }  // namespace
+pub struct PacketPool {}
 
+impl PacketPool {}
 // PacketPool *PacketPool::default_pools_[RTE_MAX_NUMA_NODES];
 
 // void PacketPool::CreateDefaultPools(size_t capacity) {

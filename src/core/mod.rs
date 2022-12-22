@@ -16,5 +16,7 @@ pub mod resume_hook;
 pub mod scheduler;
 pub mod shared_obj;
 pub mod task;
+pub mod task_h;
 pub mod traffic_class;
+mod utils;
 pub mod worker;

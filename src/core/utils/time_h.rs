@@ -27,55 +27,42 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+use libc::{clock_gettime, timespec, CLOCK_THREAD_CPUTIME_ID};
+use std::arch::x86_64::_rdtsc;
+use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
 
-// #ifndef BESS_PKTBATCH_H_
-// #define BESS_PKTBATCH_H_
+extern "C" {
+    static tsc_hz: f64;
+}
 
-// #include "utils/copy.h"
+pub unsafe fn rdtsc() -> u64 {
+    _rdtsc()
+}
 
-// namespace bess {
+unsafe fn tsc_to_ns(cycles: f64) -> u64 {
+    (cycles * 1000000000.0 / tsc_hz) as u64
+}
 
-// class Packet;
+unsafe fn tsc_to_us(cycles: f64) -> u64 {
+    (cycles * 1000000.0 / tsc_hz) as u64
+}
 
-// class PacketBatch {
-//  public:
-//   int cnt() const { return cnt_; }
-//   void set_cnt(int cnt) { cnt_ = cnt; }
-//   void incr_cnt(int n = 1) { cnt_ += n; }
+/* Return current Duration since the Epoch.
+ * This is consistent with Python's time.time() */
+pub fn get_epoch_time() -> Result<Duration, SystemTimeError> {
+    SystemTime::now().duration_since(UNIX_EPOCH)
+}
 
-//   Packet *const *pkts() const { return pkts_; }
-//   Packet **pkts() { return pkts_; }
+/* CPU time spent by the current thread.
+ * Use it only relatively. */
+pub fn get_cpu_time() -> Result<Duration, SystemTimeError> {
+    let mut ts = timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
 
-//   void clear() { cnt_ = 0; }
-
-//   // WARNING: this function has no bounds checks and so it's possible to
-//   // overrun the buffer by calling this. We are not adding bounds check because
-//   // we want maximum GOFAST.
-//   void add(Packet *pkt) { pkts_[cnt_++] = pkt; }
-//   void add(PacketBatch *batch) {
-//     bess::utils::CopyInlined(pkts_ + cnt_, batch->pkts(),
-//                              batch->cnt() * sizeof(Packet *));
-//     cnt_ += batch->cnt();
-//   }
-
-//   bool empty() { return (cnt_ == 0); }
-
-//   bool full() { return (cnt_ == kMaxBurst); }
-
-//   void Copy(const PacketBatch *src) {
-//     cnt_ = src->cnt_;
-//     bess::utils::CopyInlined(pkts_, src->pkts_, cnt_ * sizeof(Packet *));
-//   }
-
-//   inline static const size_t kMaxBurst = 32;
-
-//  private:
-//   int cnt_;
-//   Packet *pkts_[kMaxBurst];
-// };
-
-// static_assert(std::is_pod<PacketBatch>::value, "PacketBatch is not a POD Type");
-
-// }  // namespace bess
-
-// #endif  // BESS_PKTBATCH_H_
+    if unsafe { clock_gettime(CLOCK_THREAD_CPUTIME_ID, &mut ts) } == 0 {
+        return Ok(Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32));
+    }
+    get_epoch_time()
+}

@@ -58,6 +58,7 @@
 // class PacketBatch;
 // }  // namespace bess
 
+pub struct Task {}
 // // Functor used by a leaf in a Worker's Scheduler to run a task in a module.
 // class Task {
 //  private:
